@@ -45,7 +45,8 @@ echo Starting SSH MCP Server...
 echo Press Ctrl+C to stop the server
 echo.
 
-python src\main.py
+@echo off
+uv run ssh-mcp-server
 
 if errorlevel 1 (
     echo.

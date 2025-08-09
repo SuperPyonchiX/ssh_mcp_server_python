@@ -59,7 +59,7 @@ def test_tools_list():
     try:
         # サーバーを起動してリクエストを送信
         process = subprocess.Popen(
-            [sys.executable, "src/main.py"],
+            ["uv", "run", "ssh-mcp-server"],
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,

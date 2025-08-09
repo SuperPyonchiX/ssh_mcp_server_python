@@ -43,7 +43,8 @@ echo "Starting SSH MCP Server..."
 echo "Press Ctrl+C to stop the server"
 echo ""
 
-python3 src/main.py
+#!/bin/bash
+uv run ssh-mcp-server
 
 if [ $? -ne 0 ]; then
     echo ""

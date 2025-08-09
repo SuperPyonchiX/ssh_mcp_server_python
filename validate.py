@@ -104,8 +104,8 @@ def check_python_dependencies():
     
     if missing_packages:
         print(f"\n[INFO] To install missing packages, run:")
-        print(f"   pip install {' '.join(missing_packages)}")
-        print(f"   Or: pip install -r requirements.txt")
+        print(f"   uv sync")
+        print(f"   Or manually: uv add {' '.join(missing_packages)}")
     
     return len(missing_packages) == 0
 
@@ -130,9 +130,8 @@ def main():
     if all_good:
         print("[SUCCESS] All checks passed! Your SSH MCP Server is ready to run.")
         print("\nTo start the server:")
-        print("  Windows: start.bat")
-        print("  Linux/Mac: ./start.sh")
-        print("  Direct: python src/main.py")
+        print("  uv run ssh-mcp-server")
+        print("  Or: start.bat / start.sh")
     else:
         print("[ERROR] Some issues were found. Please fix them before running the server.")
         sys.exit(1)

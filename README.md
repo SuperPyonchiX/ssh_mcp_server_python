@@ -1,6 +1,6 @@
 # SSH MCP Server (Python)
 
-SSH接続機能を提供するMCP（Model Context Protocol）サーバーのPython実装です。FastMCPライブラリを使用しています。
+SSH接続機能を提供するMCP（Model Context Protocol）サーバーのPython実装です。FastMCPライブラリを使用し、uvでパッケージ管理を行います。
 
 ## 機能
 
@@ -11,18 +11,32 @@ SSH接続機能を提供するMCP（Model Context Protocol）サーバーのPyth
 - **自動設定検証**: 設定の妥当性を自動でチェック
 - **詳細ログ出力**: デバッグに便利なログ機能
 
+## 前提条件
+
+- Python 3.10以上
+- uv（Python パッケージマネージャー）
+
+uvのインストール：
+```bash
+# Windows (PowerShell)
+irm https://astral.sh/uv/install.ps1 | iex
+
+# macOS/Linux
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+
 ## クイックスタート
 
-### 1. セットアップの実行
+### 1. 依存関係のセットアップ
 
 ```bash
-python setup.py
+uv sync
 ```
 
 このコマンドで以下が実行されます：
+- 仮想環境の自動作成
 - 必要なPythonパッケージのインストール
-- 環境設定ファイル（`.env`）の作成
-- 設定の自動検証
+- ロックファイル（uv.lock）の生成
 
 ### 2. SSH接続情報の設定
 
@@ -45,14 +59,15 @@ UBUNTU_SSH_PRIVATE_KEY_PASSPHRASE=your_passphrase_if_needed
 ### 3. サーバーの起動
 
 ```bash
+# uvを使った実行（推奨）
+uv run ssh-mcp-server
+
+# または起動スクリプトを使用
 # Windows
 start.bat
 
 # Linux/Mac
 ./start.sh
-
-# 直接実行
-python src/main.py
 ```
 
 ## 利用可能なツール
@@ -70,13 +85,28 @@ python src/main.py
 ### 依存関係のインストール
 
 ```bash
-pip install -r requirements.txt
+# uvを使用（推奨）
+uv sync
+
+# または従来のpip
+pip install fastmcp paramiko python-dotenv
 ```
 
 必要なパッケージ：
 - `fastmcp` - MCP（Model Context Protocol）サーバーフレームワーク
 - `paramiko` - SSH/SFTPクライアント
 - `python-dotenv` - 環境変数管理
+
+### 開発環境での実行
+
+```bash
+# 開発モードでの実行
+uv run python ssh_mcp_server_python/main.py
+
+# または仮想環境を有効化して実行
+uv shell
+python ssh_mcp_server_python/main.py
+```
 
 ### 設定検証
 
