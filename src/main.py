@@ -172,11 +172,11 @@ class SSHMCPServer:
             
             # 必須フィールドの検証
             if not final_config.host:
-                raise ValueError('ホストが必要です。パラメータとして指定するか、UBUNTU_SSH_HOST環境変数を設定してください。')
+                raise ValueError('Host is required. Provide it as parameter or set UBUNTU_SSH_HOST environment variable.')
             if not final_config.username:
-                raise ValueError('ユーザー名が必要です。パラメータとして指定するか、UBUNTU_SSH_USERNAME環境変数を設定してください。')
+                raise ValueError('Username is required. Provide it as parameter or set UBUNTU_SSH_USERNAME environment variable.')
             if not final_config.password and not final_config.private_key:
-                raise ValueError('パスワードまたは秘密鍵が必要です。UBUNTU_SSH_PASSWORDまたはUBUNTU_SSH_PRIVATE_KEY_PATH環境変数を設定してください。')
+                raise ValueError('Either password or private key is required. Set UBUNTU_SSH_PASSWORD or UBUNTU_SSH_PRIVATE_KEY_PATH environment variable.')
             
             logger.info(f"{final_config.username}@{final_config.host}:{final_config.port} に接続中")
             
@@ -214,7 +214,7 @@ class SSHMCPServer:
                         continue
                 
                 if not private_key_obj:
-                    raise ValueError("秘密鍵を読み込めませんでした。サポートされていない形式か、パスフレーズが間違っています。")
+                    raise ValueError("Failed to load private key. Unsupported format or incorrect passphrase.")
                 
                 self.ssh_client.connect(
                     hostname=final_config.host,
@@ -238,12 +238,12 @@ class SSHMCPServer:
             self.sftp_client = self.ssh_client.open_sftp()
             self.config = final_config
             
-            success_msg = f"{final_config.username}@{final_config.host}:{final_config.port} に正常に接続しました"
+            success_msg = f"Successfully connected to {final_config.username}@{final_config.host}:{final_config.port}"
             logger.info(success_msg)
             return success_msg
             
         except Exception as e:
-            error_msg = f"SSH接続が失敗しました: {str(e)}"
+            error_msg = f"SSH connection failed: {str(e)}"
             logger.error(error_msg)
             # 失敗時はクリーンアップ
             if self.ssh_client:
@@ -263,7 +263,7 @@ class SSHMCPServer:
     async def _execute_command(self, command: str, cwd: Optional[str] = None) -> str:
         """リモートコマンドを実行"""
         if not self.ssh_client:
-            raise Exception('SSHに接続されていません。まず接続してください。')
+            raise Exception('Not connected to SSH. Please connect first.')
         
         try:
             # 作業ディレクトリが指定されている場合は、cdコマンドを前置
@@ -282,11 +282,22 @@ class SSHMCPServer:
             
             logger.info(f"コマンドが終了コード {exit_code} で実行されました")
             
-            result = f"コマンド: {command}\n終了コード: {exit_code}\n\n標準出力:\n{stdout_data}\n\n標準エラー:\n{stderr_data}"
+            # 出力を整形（改行を確実に処理）
+            result_parts = [
+                f"Command: {command}",
+                f"Exit Code: {exit_code}",
+                "",
+                "STDOUT:",
+                stdout_data.rstrip() if stdout_data.strip() else "",
+                "",
+                "STDERR:",
+                stderr_data.rstrip() if stderr_data.strip() else ""
+            ]
+            result = "\n".join(result_parts)
             return result
             
         except Exception as e:
-            error_msg = f"コマンドの実行が失敗しました: {str(e)}"
+            error_msg = f"Command execution failed: {str(e)}"
             logger.error(error_msg)
             raise Exception(error_msg)
     
@@ -300,7 +311,7 @@ class SSHMCPServer:
             
             # ローカルファイルの存在確認
             if not os.path.exists(local_path):
-                raise FileNotFoundError(f"ローカルファイルが見つかりません: {local_path}")
+                raise FileNotFoundError(f"Local file not found: {local_path}")
             
             # リモートディレクトリの作成（必要に応じて）
             remote_dir = os.path.dirname(remote_path)
@@ -313,12 +324,12 @@ class SSHMCPServer:
             
             self.sftp_client.put(local_path, remote_path)
             
-            success_msg = f"{local_path} を {remote_path} に正常にアップロードしました"
+            success_msg = f"Successfully uploaded {local_path} to {remote_path}"
             logger.info(success_msg)
             return success_msg
             
         except Exception as e:
-            error_msg = f"ファイルのアップロードが失敗しました: {str(e)}"
+            error_msg = f"File upload failed: {str(e)}"
             logger.error(error_msg)
             raise Exception(error_msg)
     
@@ -338,12 +349,12 @@ class SSHMCPServer:
             
             self.sftp_client.get(remote_path, local_path)
             
-            success_msg = f"{remote_path} を {local_path} に正常にダウンロードしました"
+            success_msg = f"Successfully downloaded {remote_path} to {local_path}"
             logger.info(success_msg)
             return success_msg
             
         except Exception as e:
-            error_msg = f"ファイルのダウンロードが失敗しました: {str(e)}"
+            error_msg = f"File download failed: {str(e)}"
             logger.error(error_msg)
             raise Exception(error_msg)
     
@@ -364,61 +375,47 @@ class SSHMCPServer:
                 
             self.config = None
             
-            success_msg = "SSHから正常に切断しました"
+            success_msg = "Successfully disconnected from SSH"
             logger.info(success_msg)
             return success_msg
             
         except Exception as e:
-            error_msg = f"切断が失敗しました: {str(e)}"
+            error_msg = f"Disconnect failed: {str(e)}"
             logger.error(error_msg)
             raise Exception(error_msg)
     
     async def _get_system_info(self) -> str:
         """システム情報を取得"""
         if not self.ssh_client:
-            raise Exception('SSHに接続されていません。まず接続してください。')
+            raise Exception('Not connected to SSH. Please connect first.')
         
         try:
             logger.info("システム情報を取得中...")
             
             commands = [
-                ('システム情報', 'uname -a'),
-                ('OSリリース', 'lsb_release -a 2>/dev/null || cat /etc/os-release'),
-                ('ディスク使用量', 'df -h'),
-                ('メモリ使用量', 'free -h'),
-                ('CPU情報', 'lscpu | head -20'),
-                ('ネットワークインターフェース', 'ip addr show'),
-                ('実行中のプロセス', 'ps aux | head -10'),
-                ('アップタイム', 'uptime'),
-                ('現在のユーザー', 'whoami'),
-                ('現在のディレクトリ', 'pwd')
+                'uname -a',
+                'lsb_release -a',
+                'df -h',
+                'free -h',
+                'ps aux | head -10',
             ]
             
-            output = f"{self.config.username}@{self.config.host} のシステム情報\n"
-            output += "=" * 60 + "\n\n"
-            
-            for description, command in commands:
+            output = ''
+            for command in commands:
                 try:
                     stdin, stdout, stderr = self.ssh_client.exec_command(command)
                     stdout_data = stdout.read().decode('utf-8', errors='replace')
-                    stderr_data = stderr.read().decode('utf-8', errors='replace')
                     
-                    output += f"=== {description} ===\n"
-                    if stdout_data.strip():
-                        output += stdout_data.strip() + "\n"
-                    if stderr_data.strip():
-                        output += f"(標準エラー): {stderr_data.strip()}\n"
-                    output += "\n"
+                    output += f"=== {command} ===\n{stdout_data}\n\n"
                     
                 except Exception as e:
-                    output += f"=== {description} ===\n"
-                    output += f"コマンド '{command}' の実行エラー: {str(e)}\n\n"
+                    output += f"=== {command} ===\nCommand execution error: {str(e)}\n\n"
             
             logger.info("システム情報を正常に取得しました")
             return output
             
         except Exception as e:
-            error_msg = f"システム情報の取得が失敗しました: {str(e)}"
+            error_msg = f"System info failed: {str(e)}"
             logger.error(error_msg)
             raise Exception(error_msg)
 
